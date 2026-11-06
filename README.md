@@ -74,6 +74,45 @@ The rehearsal removed 979 mm³ of bone with 0 breaches. The drilling path is an 
 
 OpenEar segment names differ slightly between specimens: EPSILON uses "EAC" and "Sinus - Dura", ZETA uses "External Auditory Canal" and "Sinus Dura". The demo matches them either way. All eight specimens (ALPHA–THETA) can be fetched with the same command.
 
+### STL models for 3D printing
+
+`Testing/export_openear_stl.py` turns an OpenEar segmentation into one STL per structure, for 3D-printed phantoms or for use in other software:
+
+```
+python TemporalBoneSafety/Testing/fetch_openear.py ZETA ./openear_ZETA
+OPENEAR_DIR=./openear_ZETA STL_OUT=./openear_ZETA_stl OPENEAR_SPECIMEN=ZETA \
+  Slicer --no-splash --no-main-window \
+         --python-script TemporalBoneSafety/Testing/export_openear_stl.py
+```
+
+The process:
+
+1. Load `Segmentation.seg.nrrd` (0.125 mm voxels).
+2. Convert each segment to a closed surface with Slicer's segmentation logic (smoothing factor 0.3, set by `STL_SMOOTHING`).
+3. Decimate meshes above 400,000 triangles (`STL_MAX_TRIANGLES`) by quadric decimation with volume preservation. In OpenEar this applies only to the bone and sinus/dura.
+4. Write binary STL in millimetres. All files share one coordinate frame (RAS, the same as the CBCT), so load them together and don't move them individually.
+5. Count open and non-manifold edges, and write a `README.txt` with the source, license and a table of the meshes.
+
+For ZETA the run takes about 2 minutes and produces 13 files (34 MB zipped):
+
+| File | Structure | Size (mm) | Triangles |
+|---|---|---|---|
+| ZETA_00_Scala_Tympani.stl | Scala tympani | 5.1 × 6.8 × 8.5 | 22,708 |
+| ZETA_01_Scala_Vestibuli.stl | Scala vestibuli | 12.2 × 14.6 × 15.1 | 73,144 |
+| ZETA_02_Malleus.stl | Malleus | 3.5 × 8.2 × 3.2 | 8,804 |
+| ZETA_03_Incus.stl | Incus | 4.0 × 5.9 × 4.9 | 9,284 |
+| ZETA_04_Stapes.stl | Stapes | 3.5 × 2.3 × 4.1 | 5,484 |
+| ZETA_05_Cochleovestibular_nerve.stl | Cochleovestibular nerve | 13.1 × 7.9 × 17.8 | 63,072 |
+| ZETA_06_Facial_Nerve.stl | Facial nerve | 8.7 × 18.7 × 15.2 | 26,136 |
+| ZETA_07_Chorda_Tympani.stl | Chorda tympani | 8.9 × 11.7 × 9.1 | 8,176 |
+| ZETA_08_Bone.stl | Temporal bone | 80.0 × 72.3 × 59.3 | 400,000 |
+| ZETA_09_Tympanic_Membrane.stl | Tympanic membrane | 7.7 × 9.5 × 8.3 | 42,776 |
+| ZETA_10_External_Auditory_Canal.stl | External auditory canal | 13.4 × 11.3 × 22.5 | 117,816 |
+| ZETA_11_Sinus_Dura.stl | Sigmoid sinus and dura | 70.3 × 46.4 × 41.4 | 400,000 |
+| ZETA_12_Carotis_Interna.stl | Internal carotid artery | 9.0 × 11.8 × 11.3 | 63,864 |
+
+The 11 small structures are watertight. The decimated bone mesh has about 600 open edges and the sinus/dura mesh has 3, so run your printer software's repair step before printing the bone. The STL files are not stored in this repository; regenerate them with the commands above. They inherit OpenEar's CC BY 4.0 license, so cite Sieber et al. 2019 when you use them.
+
 ## With real data
 
 * Crop the CT to the temporal bone first (*Crop Volume*); distance maps are computed on the full CT grid.
@@ -109,5 +148,6 @@ SlicerTemporalBoneSafety/
     ├── TemporalBoneSafetyLib/core.py   # numpy/SimpleITK math (no Slicer imports)
     ├── Resources/Icons/TemporalBoneSafety.png
     └── Testing/{test_core.py, run_in_slicer.py,
-                 fetch_openear.py, openear_demo.py}
+                 fetch_openear.py, openear_demo.py,
+                 export_openear_stl.py}
 ```

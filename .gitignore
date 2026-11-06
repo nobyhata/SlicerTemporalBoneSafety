@@ -5,3 +5,4 @@ __pycache__/
 *.seg.nrrd
 openear_*/
 results/
+*.stl
